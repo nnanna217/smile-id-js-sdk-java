@@ -107,12 +107,14 @@ This runs the `SmartSelfieAuthentication.java` example with hardcoded test image
 ## API Endpoints
 
 ### Health Check
+
 ```
 GET /health
 Response: {"status": "ok"}
 ```
 
 ### Submit Selfie Authentication
+
 ```
 POST /api/smartselfie/authenticate
 Content-Type: application/json
@@ -138,6 +140,7 @@ Response:
 ## Technical Stack
 
 ### Backend
+
 - **Java 8** - Core language
 - **Smile Identity Core SDK 2.1.6** - Authentication and verification
 - **Spark Java 2.9.4** - Lightweight web framework
@@ -147,16 +150,19 @@ Response:
 - **Moshi 1.14.0** - JSON parsing
 
 ### Frontend
+
 - **Smile Identity Smart Camera Web SDK v11** - Selfie and liveness capture
 - **Vanilla JavaScript** - No framework dependencies
 - **Bootstrap-style CSS** - Modern UI components
 
 ### Build Tools
+
 - **Gradle 7.6** - Build automation
 
 ## Dependencies
 
 This project uses:
+
 - Smile Identity Core SDK (2.1.6) - Identity verification
 - Spark Java (2.9.4) - REST API framework
 - Gson (2.10.1) - JSON processing
@@ -171,12 +177,12 @@ This project uses:
 
 ### Environment Variables
 
-| Variable | Description | Required | Default |
-|----------|-------------|----------|---------|
-| `SMILE_PARTNER_ID` | Your Smile Identity Partner ID | Yes | - |
-| `SMILE_API_KEY` | Your Smile Identity API Key | Yes | - |
-| `SMILE_SID_SERVER` | Server environment (0=sandbox, 1=production) | Yes | 0 |
-| `SERVER_PORT` | Web server port | No | 4567 |
+| Variable           | Description                                  | Required | Default |
+| ------------------ | -------------------------------------------- | -------- | ------- |
+| `SMILE_PARTNER_ID` | Your Smile Identity Partner ID               | Yes      | -       |
+| `SMILE_API_KEY`    | Your Smile Identity API Key                  | Yes      | -       |
+| `SMILE_SID_SERVER` | Server environment (0=sandbox, 1=production) | Yes      | 0       |
+| `SERVER_PORT`      | Web server port                              | No       | 4567    |
 
 ### Image Types
 
@@ -201,47 +207,16 @@ The system handles the following image types from Smile Identity SDK:
 4. **CORS Support** - Configured for cross-origin requests during development
 5. **Error Handling** - Comprehensive error messages and user feedback
 
-## Security
-
-- ✅ Sensitive credentials stored in `.env` (not committed to git)
-- ✅ `.gitignore` configured to exclude `.env` file
-- ✅ `.env.example` provided as template (safe to commit)
-- ✅ Environment-based configuration for all sensitive data
-
-**Important:** Never commit your `.env` file to version control!
-
 ## Troubleshooting
 
 ### Build Issues
 
 **Problem:** Gradle build fails
+
 ```bash
 # Clean and rebuild
 ./gradlew clean build
 ```
-
-### Server Issues
-
-**Problem:** Port 4567 already in use
-```bash
-# Change port in .env
-SERVER_PORT=8080
-```
-
-**Problem:** Cannot access selfie-capture.html (HTTP 400)
-- Ensure the HTML file is in the project root directory
-- Check server logs for "External StaticResourceHandler configured" message
-
-### Authentication Issues
-
-**Problem:** "Invalid credentials" error
-- Verify your `SMILE_PARTNER_ID` and `SMILE_API_KEY` in `.env`
-- Ensure `SMILE_SID_SERVER` is set to `0` for sandbox testing
-
-**Problem:** "Failed to send images" error
-- Check that the backend server is running on port 4567
-- Verify CORS is enabled in SmartSelfieWebServer.java
-- Check browser console for detailed error messages
 
 ## Contributing
 
@@ -265,6 +240,7 @@ This project is for demonstration purposes using the Smile Identity SDK.
 ## Support
 
 For issues related to:
+
 - **This project**: Open an issue on GitHub
 - **Smile Identity SDK**: Contact [Smile Identity Support](https://usesmileid.com/contact)
 
