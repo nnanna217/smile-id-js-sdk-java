@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Selfie & Liveness Capture</title>
+        <script src="https://cdn.smileidentity.com/js/v11/smart-camera-web.js"></script>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 20px;
+                background-color: #f5f5f5;
+            }
+
+            .container {
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+
+            h1 {
+                color: #333;
+                text-align: center;
+            }
+
+            .camera-container {
+                background: white;
+                padding: 20px;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                margin-bottom: 30px;
+            }
+
+            .results-container {
+                background: white;
+                padding: 20px;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                display: none;
+            }
+
+            .results-container.active {
+                display: block;
+            }
+
+            .image-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 15px;
+                margin-top: 20px;
+            }
+
+            .image-item {
+                border: 2px solid #ddd;
+                border-radius: 8px;
+                padding: 10px;
+                background: #fafafa;
+            }
+
+            .image-item h3 {
+                margin: 0 0 10px 0;
+                font-size: 14px;
+                color: #666;
+                text-transform: uppercase;
+            }
+
+            .image-item img {
+                width: 100%;
+                height: auto;
+                border-radius: 4px;
+                background: #eee;
+            }
+
+            .json-output {
+                background: #f4f4f4;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                padding: 15px;
+                margin-top: 20px;
+                overflow-x: auto;
+            }
+
+            .json-output pre {
+                margin: 0;
+                font-size: 12px;
+                white-space: pre-wrap;
+                word-wrap: break-word;
+            }
+
+            .status {
+                padding: 10px;
+                border-radius: 4px;
+                margin-bottom: 15px;
+                font-weight: bold;
+            }
+
+            .status.success {
+                background: #d4edda;
+                color: #155724;
+                border: 1px solid #c3e6cb;
+            }
+
+            .status.info {
+                background: #d1ecf1;
+                color: #0c5460;
+                border: 1px solid #bee5eb;
+            }
+
+            /* Modal Styles */
+            .modal {
+                display: none;
+                position: fixed;
+                z-index: 1000;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0,0,0,0.5);
+            }
+
+            .modal.active {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .modal-content {
+                background-color: white;
+                padding: 30px;
+                border-radius: 8px;
+                max-width: 500px;
+                text-align: center;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            }
+
+            .modal-content h2 {
+                color: #155724;
+                margin-bottom: 15px;
+            }
+
+            .modal-content p {
+                color: #666;
+                margin-bottom: 20px;
+            }
+
+            .modal-content button {
+                background-color: #ff0000;
+                color: white;
+                border: none;
+                padding: 10px 30px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 16px;
+            }
+
+            .modal-content button:hover {
+                background-color: #cc0000;
+            }
+
+            .loading {
+                display: inline-block;
+                width: 20px;
+                height: 20px;
+                border: 3px solid #f3f3f3;
+                border-top: 3px solid #ff0000;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+            }
+
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="container">
+            <h1>Selfie & Liveness Capture</h1>
+
+            <div class="camera-container">
+                <selfie-capture-screens
+                    hide-attribution
+                    hide-instructions
+                    hide-navigation
+                    theme-color="#ff0000"
+                ></selfie-capture-screens>
+            </div>
+
+            <div class="results-container" id="results">
+                <div class="status success">
+                    Capture Complete! Images received successfully.
+                </div>
+
+                <h2>Captured Images</h2>
+                <div class="image-grid" id="imageGrid"></div>
+
+                <h2>Full Event Data (JSON)</h2>
+                <div class="json-output">
+                    <pre id="jsonOutput"></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Modal -->
+        <div class="modal" id="successModal">
+            <div class="modal-content">
+                <h2 id="modalTitle">Processing...</h2>
+                <p id="modalMessage">
+                    <span class="loading"></span>
+                    Sending images to SmileID...
+                </p>
+                <button id="modalButton" style="display:none;" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+
+        <script>
+            // Listen for the capture event
+            document
+                .querySelector("selfie-capture-screens")
+                .addEventListener(
+                    "selfie-capture-screens.publish",
+                    function (event) {
+                        console.log("Capture event received:", event.detail);
+
+                        // Display the captured images
+                        displayCaptureResults(event.detail);
+                    }
+                );
+
+            function displayCaptureResults(eventData) {
+                const resultsContainer = document.getElementById("results");
+                const imageGrid = document.getElementById("imageGrid");
+                const jsonOutput = document.getElementById("jsonOutput");
+
+                // Clear previous results
+                imageGrid.innerHTML = "";
+
+                // Show results container
+                resultsContainer.classList.add("active");
+
+                // Check if images array exists
+                if (!eventData.images || !Array.isArray(eventData.images)) {
+                    imageGrid.innerHTML = "<p style='color: #999;'>No images array found in event data</p>";
+                    jsonOutput.textContent = JSON.stringify(eventData, null, 2);
+                    return;
+                }
+
+                // Image type mapping based on image_type_id
+                // image_type_id: 2 = Selfie, 6 = Liveness frames
+                const imageTypeNames = {
+                    2: "Selfie",
+                    6: "Liveness Frame"
+                };
+
+                // Track liveness frame count for labeling
+                let livenessCount = 0;
+                let selfieCount = 0;
+
+                // Process each image in the array
+                eventData.images.forEach((imageObj, index) => {
+                    if (imageObj && imageObj.image) {
+                        const imageItem = document.createElement("div");
+                        imageItem.className = "image-item";
+
+                        const title = document.createElement("h3");
+
+                        // Generate appropriate label based on image_type_id
+                        if (imageObj.image_type_id === 2) {
+                            selfieCount++;
+                            title.textContent = selfieCount === 1 ? "Selfie" : `Selfie ${selfieCount}`;
+                        } else if (imageObj.image_type_id === 6) {
+                            livenessCount++;
+                            title.textContent = `Liveness ${livenessCount}`;
+                        } else {
+                            title.textContent = `Image ${index + 1} (Type ID: ${imageObj.image_type_id})`;
+                        }
+
+                        const img = document.createElement("img");
+
+                        // Handle base64 image data
+                        const base64Data = imageObj.image;
+                        img.src = base64Data.startsWith("data:")
+                            ? base64Data
+                            : `data:image/jpeg;base64,${base64Data}`;
+
+                        img.alt = title.textContent;
+                        img.onerror = function() {
+                            this.style.display = "none";
+                            const error = document.createElement("p");
+                            error.textContent = "Failed to load image";
+                            error.style.color = "#999";
+                            imageItem.appendChild(error);
+                        };
+
+                        imageItem.appendChild(title);
+                        imageItem.appendChild(img);
+                        imageGrid.appendChild(imageItem);
+                    }
+                });
+
+                // If no images were found, show a message
+                if (imageGrid.children.length === 0) {
+                    imageGrid.innerHTML = "<p style='color: #999;'>No images found in event data</p>";
+                }
+
+                // Display full JSON data (with truncated base64 for readability)
+                const displayData = JSON.parse(JSON.stringify(eventData));
+
+                // Truncate long base64 strings for display
+                if (displayData.images && Array.isArray(displayData.images)) {
+                    displayData.images = displayData.images.map(img => {
+                        if (img.image && img.image.length > 100) {
+                            return {
+                                ...img,
+                                image: img.image.substring(0, 100) + `... [truncated, length: ${img.image.length}]`
+                            };
+                        }
+                        return img;
+                    });
+                }
+
+                jsonOutput.textContent = JSON.stringify(displayData, null, 2);
+
+                // Scroll to results
+                resultsContainer.scrollIntoView({ behavior: "smooth" });
+
+                // Automatically send to backend
+                sendToBackend(eventData);
+            }
+
+            function sendToBackend(eventData) {
+                // Show modal
+                const modal = document.getElementById("successModal");
+                modal.classList.add("active");
+
+                // Extract images and prepare data for backend
+                const payload = extractImagesForBackend(eventData);
+
+                // Send to Java backend (Spark Java server running on port 4567)
+                const backendUrl = "http://localhost:4567/api/smartselfie/authenticate";
+
+                fetch(backendUrl, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Success!
+                    showSuccessModal();
+                    console.log("Backend response:", data);
+                })
+                .catch(error => {
+                    // Error handling
+                    showErrorModal(error.message);
+                    console.error("Error sending to backend:", error);
+                });
+            }
+
+            function extractImagesForBackend(eventData) {
+                if (!eventData.images || !Array.isArray(eventData.images)) {
+                    return null;
+                }
+
+                const payload = {
+                    selfieBase64: "",
+                    liveness1Base64: "",
+                    liveness2Base64: "",
+                    liveness3Base64: "",
+                    liveness4Base64: "",
+                    liveness5Base64: "",
+                    liveness6Base64: "",
+                    liveness7Base64: ""
+                };
+
+                let livenessIndex = 1;
+
+                eventData.images.forEach(imageObj => {
+                    if (!imageObj || !imageObj.image) return;
+
+                    // Clean base64 string (remove data:image prefix if present)
+                    let base64String = imageObj.image;
+                    if (base64String.startsWith("data:")) {
+                        base64String = base64String.split(",")[1];
+                    }
+
+                    // Map based on image_type_id
+                    if (imageObj.image_type_id === 2) {
+                        // Selfie
+                        payload.selfieBase64 = base64String;
+                    } else if (imageObj.image_type_id === 6) {
+                        // Liveness frames
+                        if (livenessIndex <= 7) {
+                            payload[`liveness${livenessIndex}Base64`] = base64String;
+                            livenessIndex++;
+                        }
+                    }
+                });
+
+                return payload;
+            }
+
+            function showSuccessModal() {
+                document.getElementById("modalTitle").textContent = "Success!";
+                document.getElementById("modalMessage").innerHTML = "Images successfully sent to SmileID for authentication.";
+                document.getElementById("modalButton").style.display = "inline-block";
+            }
+
+            function showErrorModal(errorMessage) {
+                document.getElementById("modalTitle").textContent = "Error";
+                document.getElementById("modalMessage").innerHTML = `Failed to send images: ${errorMessage}`;
+                document.getElementById("modalButton").style.display = "inline-block";
+            }
+
+            function closeModal() {
+                const modal = document.getElementById("successModal");
+                modal.classList.remove("active");
+
+                // Reset modal content
+                document.getElementById("modalTitle").textContent = "Processing...";
+                document.getElementById("modalMessage").innerHTML = '<span class="loading"></span> Sending images to SmileID...';
+                document.getElementById("modalButton").style.display = "none";
+            }
+        </script>
+    </body>
+</html>
