@@ -4,11 +4,14 @@ A web-based selfie and liveness capture system using Smile Identity SDK. This pr
 
 ## Features
 
+- 🎨 **Modern UI** - Beautiful purple gradient design with smooth animations
+- 👤 **User Enrollment** - Register new users with SmartSelfie biometric capture
+- 🔐 **User Authentication** - Verify existing users against enrolled biometric data
 - 📸 **Web Interface** - Browser-based capture using Smile Identity Smart Camera Web SDK v11
 - 🎯 **Liveness Detection** - Captures selfie and up to 7 liveness frames
 - 🚀 **REST API** - Spark Java backend for processing and submitting to Smile Identity
 - 🔒 **Secure Configuration** - Environment-based credential management
-- ✅ **Real-time Feedback** - Success/error modal notifications
+- ✅ **Real-time Feedback** - Contextual success/error messages based on operation type
 - 🌐 **CORS Enabled** - Ready for local development and testing
 
 ## Project Structure
@@ -20,6 +23,7 @@ Smart-camera-web-java/
 ├── README.md                       # Project documentation
 ├── build.gradle                    # Gradle build configuration
 ├── settings.gradle                 # Gradle settings
+├── index.html                      # Landing page with job type selection
 ├── selfie-capture.html            # Web interface for selfie capture
 ├── src/
 │   └── main/
@@ -81,18 +85,30 @@ The server will start at `http://localhost:4567`
 Open your browser and navigate to:
 
 ```
-http://localhost:4567/selfie-capture.html
+http://localhost:4567/index.html
 ```
 
 ## Usage
 
-### Web Interface
+### Web Interface - User Enrollment
 
-1. Open `http://localhost:4567/selfie-capture.html` in your browser
-2. Click the capture button to start the selfie session
-3. Follow the on-screen instructions for liveness detection
-4. Images are automatically extracted and sent to the backend
-5. A success modal appears when submission to Smile Identity is complete
+1. Open `http://localhost:4567/index.html` in your browser
+2. Select **"Enroll User Using SmartSelfie Registration"** from the dropdown
+3. Click **"Continue to Capture"**
+4. Follow the on-screen instructions for selfie and liveness capture
+5. Images are automatically extracted and sent to the backend
+6. On success, you'll see **"User Enrollment Successful!"** with the generated User ID
+7. **Save the User ID** - you'll need it for authentication
+
+### Web Interface - User Authentication
+
+1. Open `http://localhost:4567/index.html` in your browser
+2. Select **"Authenticate a User with SmartSelfie Auth"** from the dropdown
+3. Enter the **User ID** of a previously enrolled user
+4. Click **"Continue to Capture"**
+5. Complete the selfie and liveness capture
+6. On success: **"User Authentication Successful!"**
+7. On failure (user not found): **"User Authentication Failed - No enrolled user found."**
 
 ### CLI Example
 
@@ -113,7 +129,7 @@ GET /health
 Response: {"status": "ok"}
 ```
 
-### Submit Selfie Authentication
+### Submit Selfie Enrollment/Authentication
 
 ```
 POST /api/smartselfie/authenticate
@@ -121,6 +137,8 @@ Content-Type: application/json
 
 Request Body:
 {
+  "jobType": "SMART_SELFIE_REGISTRATION or SMART_SELFIE_AUTHENTICATION",
+  "userId": "user_id_here (null for registration, required for authentication)",
   "selfieBase64": "base64_encoded_selfie_image",
   "liveness1Base64": "base64_encoded_liveness_image",
   "liveness2Base64": "base64_encoded_liveness_image",
@@ -128,12 +146,19 @@ Request Body:
   "liveness7Base64": "base64_encoded_liveness_image"
 }
 
-Response:
+Success Response:
 {
   "success": true,
   "message": "Successfully submitted to SmileID",
-  "jobId": "unique_job_id",
-  "userId": "unique_user_id"
+  "imageCount": 8,
+  "jobId": "web-job-1234567890",
+  "userId": "web-user-1234567890"  // Generated for registration, echoed for authentication
+}
+
+Error Response:
+{
+  "success": false,
+  "error": "No enrolled user found."  // or other error message
 }
 ```
 
@@ -184,6 +209,18 @@ This project uses:
 | `SMILE_SID_SERVER` | Server environment (0=sandbox, 1=production) | Yes      | 0       |
 | `SERVER_PORT`      | Web server port                              | No       | 4567    |
 
+### Job Types
+
+The system supports two job types:
+
+- **SMART_SELFIE_REGISTRATION**: Enrolls a new user with biometric data
+  - Automatically generates a unique User ID (format: `web-user-{timestamp}`)
+  - Creates a new biometric profile in Smile Identity
+
+- **SMART_SELFIE_AUTHENTICATION**: Verifies an existing user
+  - Requires a User ID from a previously enrolled user
+  - Compares captured biometric data against stored profile
+
 ### Image Types
 
 The system handles the following image types from Smile Identity SDK:
@@ -195,17 +232,21 @@ The system handles the following image types from Smile Identity SDK:
 
 ### Project Layout
 
+- **index.html** - Landing page with job type selection (Registration vs Authentication)
 - **selfie-capture.html** - Frontend web interface with Smart Camera Web SDK integration
 - **SmartSelfieWebServer.java** - REST API server handling image submissions
 - **SmartSelfieAuthentication.java** - Standalone CLI example for testing
 
 ### Key Features
 
-1. **Automatic Image Extraction** - JavaScript automatically extracts images from capture event
-2. **Dynamic Liveness Handling** - Supports variable number of liveness frames (up to 7)
-3. **Base64 Cleaning** - Strips data URI prefixes before backend submission
-4. **CORS Support** - Configured for cross-origin requests during development
-5. **Error Handling** - Comprehensive error messages and user feedback
+1. **Job Type Selection** - User-friendly dropdown to choose between enrollment and authentication
+2. **Dynamic User ID Management** - Auto-generated for registration, manual input for authentication
+3. **Automatic Image Extraction** - JavaScript automatically extracts images from capture event
+4. **Dynamic Liveness Handling** - Supports variable number of liveness frames (up to 7)
+5. **Base64 Cleaning** - Strips data URI prefixes before backend submission
+6. **CORS Support** - Configured for cross-origin requests during development
+7. **Contextual Feedback** - Success/error messages tailored to the operation type
+8. **Session Management** - Uses sessionStorage to pass data between pages
 
 ## Troubleshooting
 

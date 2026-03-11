@@ -143,17 +143,20 @@
             }
 
             .modal-content button {
-                background-color: #ff0000;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 color: white;
                 border: none;
                 padding: 10px 30px;
-                border-radius: 4px;
+                border-radius: 8px;
                 cursor: pointer;
                 font-size: 16px;
+                font-weight: 600;
+                transition: all 0.3s ease;
             }
 
             .modal-content button:hover {
-                background-color: #cc0000;
+                transform: translateY(-2px);
+                box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
             }
 
             .loading {
@@ -161,7 +164,7 @@
                 width: 20px;
                 height: 20px;
                 border: 3px solid #f3f3f3;
-                border-top: 3px solid #ff0000;
+                border-top: 3px solid #667eea;
                 border-radius: 50%;
                 animation: spin 1s linear infinite;
             }
@@ -182,7 +185,7 @@
                     hide-attribution
                     hide-instructions
                     hide-navigation
-                    theme-color="#ff0000"
+                    theme-color="#667eea"
                 ></selfie-capture-screens>
             </div>
 
@@ -214,6 +217,14 @@
         </div>
 
         <script>
+            // Check if job type is set, otherwise redirect to index
+            const jobType = sessionStorage.getItem('jobType');
+            if (!jobType) {
+                window.location.href = 'index.html';
+            }
+
+            const userId = sessionStorage.getItem('userId') || null;
+
             // Listen for the capture event
             document
                 .querySelector("selfie-capture-screens")
@@ -353,9 +364,16 @@
                     return response.json();
                 })
                 .then(data => {
-                    // Success!
-                    showSuccessModal();
                     console.log("Backend response:", data);
+
+                    // Check if the response indicates success or failure
+                    if (data.success === false) {
+                        // Handle failure from Smile ID
+                        showErrorModal(data.error || "Operation failed");
+                    } else {
+                        // Success!
+                        showSuccessModal(data);
+                    }
                 })
                 .catch(error => {
                     // Error handling
@@ -370,6 +388,8 @@
                 }
 
                 const payload = {
+                    jobType: jobType,
+                    userId: userId,
                     selfieBase64: "",
                     liveness1Base64: "",
                     liveness2Base64: "",
@@ -407,16 +427,52 @@
                 return payload;
             }
 
-            function showSuccessModal() {
+            function showSuccessModal(data) {
                 document.getElementById("modalTitle").textContent = "Success!";
-                document.getElementById("modalMessage").innerHTML = "Images successfully sent to SmileID for authentication.";
+
+                let message = "";
+                if (jobType === "SMART_SELFIE_REGISTRATION") {
+                    message = `<strong>User Enrollment Successful!</strong><br><br>`;
+                    if (data.userId) {
+                        message += `User ID: <code>${data.userId}</code><br>`;
+                    }
+                    if (data.jobId) {
+                        message += `Job ID: <code>${data.jobId}</code>`;
+                    }
+                } else if (jobType === "SMART_SELFIE_AUTHENTICATION") {
+                    message = `<strong>User Authentication Successful!</strong><br><br>`;
+                    message += `User ID: <code>${userId}</code><br>`;
+                    if (data.jobId) {
+                        message += `Job ID: <code>${data.jobId}</code>`;
+                    }
+                }
+
+                document.getElementById("modalMessage").innerHTML = message;
                 document.getElementById("modalButton").style.display = "inline-block";
+                document.getElementById("modalButton").textContent = "Back to Home";
+                document.getElementById("modalButton").onclick = function() {
+                    window.location.href = "index.html";
+                };
             }
 
             function showErrorModal(errorMessage) {
                 document.getElementById("modalTitle").textContent = "Error";
-                document.getElementById("modalMessage").innerHTML = `Failed to send images: ${errorMessage}`;
+
+                let message = "";
+                if (jobType === "SMART_SELFIE_REGISTRATION") {
+                    message = `<strong>User Enrollment Failed</strong><br><br>`;
+                } else if (jobType === "SMART_SELFIE_AUTHENTICATION") {
+                    message = `<strong>User Authentication Failed</strong><br><br>`;
+                }
+
+                message += `${errorMessage}`;
+
+                document.getElementById("modalMessage").innerHTML = message;
                 document.getElementById("modalButton").style.display = "inline-block";
+                document.getElementById("modalButton").textContent = "Try Again";
+                document.getElementById("modalButton").onclick = function() {
+                    closeModal();
+                };
             }
 
             function closeModal() {

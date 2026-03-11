@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smile Identity - Smart Selfie</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        select, input[type="text"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        select:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        select {
+            cursor: pointer;
+            background-color: white;
+        }
+
+        .user-id-group {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .helper-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 6px;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            color: #e53e3e;
+            font-size: 13px;
+            margin-top: 6px;
+            display: none;
+        }
+
+        .info-card {
+            background: #f7fafc;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+        }
+
+        .info-card h3 {
+            color: #333;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .info-card p {
+            color: #666;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">📸</div>
+            <h1>Smile Identity</h1>
+            <p>Secure biometric verification</p>
+        </div>
+
+        <form id="jobTypeForm">
+            <div class="form-group">
+                <label for="jobType">Select Operation</label>
+                <select id="jobType" name="jobType" required>
+                    <option value="">-- Choose an option --</option>
+                    <option value="SMART_SELFIE_REGISTRATION">Enroll User Using SmartSelfie Registration</option>
+                    <option value="SMART_SELFIE_AUTHENTICATION">Authenticate a User with SmartSelfie Auth</option>
+                </select>
+            </div>
+
+            <div class="form-group user-id-group" id="userIdGroup">
+                <label for="userId">User ID</label>
+                <input
+                    type="text"
+                    id="userId"
+                    name="userId"
+                    placeholder="Enter the user ID to authenticate"
+                    pattern="[A-Za-z0-9_-]+"
+                    title="User ID should contain only letters, numbers, underscores, or hyphens"
+                />
+                <div class="helper-text">Enter the User ID of the person you want to authenticate</div>
+                <div class="error-message" id="userIdError">Please enter a valid User ID</div>
+            </div>
+
+            <button type="submit" class="btn-primary" id="continueBtn" disabled>
+                Continue to Capture
+            </button>
+        </form>
+
+        <div class="info-card">
+            <h3>ℹ️ Information</h3>
+            <p id="infoText">Select an operation to get started. Enrollment creates a new user profile, while authentication verifies an existing user.</p>
+        </div>
+    </div>
+
+    <script>
+        const jobTypeSelect = document.getElementById('jobType');
+        const userIdGroup = document.getElementById('userIdGroup');
+        const userIdInput = document.getElementById('userId');
+        const userIdError = document.getElementById('userIdError');
+        const continueBtn = document.getElementById('continueBtn');
+        const form = document.getElementById('jobTypeForm');
+        const infoText = document.getElementById('infoText');
+
+        const infoMessages = {
+            'SMART_SELFIE_REGISTRATION': 'Enrollment will create a new user profile with biometric data. A unique User ID will be automatically generated.',
+            'SMART_SELFIE_AUTHENTICATION': 'Authentication will verify the captured selfie against an existing enrolled user. You must provide the User ID of the enrolled user.'
+        };
+
+        // Handle job type selection
+        jobTypeSelect.addEventListener('change', function() {
+            const selectedValue = this.value;
+
+            if (selectedValue === 'SMART_SELFIE_AUTHENTICATION') {
+                userIdGroup.style.display = 'block';
+                userIdInput.required = true;
+                continueBtn.disabled = true;
+            } else if (selectedValue === 'SMART_SELFIE_REGISTRATION') {
+                userIdGroup.style.display = 'none';
+                userIdInput.required = false;
+                userIdInput.value = '';
+                userIdError.style.display = 'none';
+                continueBtn.disabled = false;
+            } else {
+                userIdGroup.style.display = 'none';
+                userIdInput.required = false;
+                continueBtn.disabled = true;
+            }
+
+            // Update info text
+            if (selectedValue && infoMessages[selectedValue]) {
+                infoText.textContent = infoMessages[selectedValue];
+            } else {
+                infoText.textContent = 'Select an operation to get started. Enrollment creates a new user profile, while authentication verifies an existing user.';
+            }
+        });
+
+        // Validate User ID input
+        userIdInput.addEventListener('input', function() {
+            const value = this.value.trim();
+            const isValid = /^[A-Za-z0-9_-]+$/.test(value);
+
+            if (value.length === 0) {
+                continueBtn.disabled = true;
+                userIdError.style.display = 'none';
+            } else if (isValid && value.length > 0) {
+                continueBtn.disabled = false;
+                userIdError.style.display = 'none';
+            } else {
+                continueBtn.disabled = true;
+                userIdError.style.display = 'block';
+            }
+        });
+
+        // Handle form submission
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const jobType = jobTypeSelect.value;
+            const userId = userIdInput.value.trim();
+
+            if (!jobType) {
+                alert('Please select an operation');
+                return;
+            }
+
+            if (jobType === 'SMART_SELFIE_AUTHENTICATION' && !userId) {
+                userIdError.style.display = 'block';
+                return;
+            }
+
+            // Store in sessionStorage and redirect
+            sessionStorage.setItem('jobType', jobType);
+            if (userId) {
+                sessionStorage.setItem('userId', userId);
+            } else {
+                sessionStorage.removeItem('userId');
+            }
+
+            // Redirect to capture page
+            window.location.href = 'selfie-capture.html';
+        });
+    </script>
+</body>
+</html>

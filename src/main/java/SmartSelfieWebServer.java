@@ -99,18 +99,38 @@ public class SmartSelfieWebServer {
             // Initialize WebApi
             WebApi connection = new WebApi(partnerId, apiKey, defaultCallback, sidServer);
 
-            // Generate unique IDs
+            // Determine job type from payload
+            JobType jobType;
+            String actualUserId;
+
+            if ("SMART_SELFIE_REGISTRATION".equals(payload.jobType)) {
+                jobType = JobType.SMART_SELFIE_REGISTRATION;
+                // Generate unique user ID for registration
+                String timestamp = String.valueOf(System.currentTimeMillis());
+                actualUserId = "web-user-" + timestamp;
+            } else if ("SMART_SELFIE_AUTHENTICATION".equals(payload.jobType)) {
+                jobType = JobType.SMART_SELFIE_AUTHENTICATION;
+                // Use provided user ID for authentication
+                actualUserId = payload.userId;
+                if (actualUserId == null || actualUserId.trim().isEmpty()) {
+                    throw new IllegalArgumentException("User ID is required for authentication");
+                }
+            } else {
+                throw new IllegalArgumentException("Invalid job type: " + payload.jobType);
+            }
+
+            // Generate unique job ID
             String timestamp = String.valueOf(System.currentTimeMillis());
-            String uniqueUserId = "web-user-" + timestamp;
             String uniqueJobId = "web-job-" + timestamp;
 
             // Create tracking parameters
             Map<String, Object> optionalInfo = new HashMap<>();
             optionalInfo.put("source", "web-capture");
+            optionalInfo.put("jobType", payload.jobType);
 
             PartnerParams params = new PartnerParams(
-                JobType.SMART_SELFIE_AUTHENTICATION,
-                uniqueUserId,
+                jobType,
+                actualUserId,
                 uniqueJobId,
                 optionalInfo
             );
@@ -172,7 +192,7 @@ public class SmartSelfieWebServer {
             result.put("success", true);
             result.put("message", "Successfully submitted to SmileID");
             result.put("imageCount", imageDetails.size());
-            result.put("userId", uniqueUserId);
+            result.put("userId", actualUserId);
             result.put("jobId", uniqueJobId);
 
             return result;
@@ -188,6 +208,8 @@ public class SmartSelfieWebServer {
 
     // Data classes
     static class ImagePayload {
+        String jobType;  // SMART_SELFIE_REGISTRATION or SMART_SELFIE_AUTHENTICATION
+        String userId;   // For authentication, null for registration
         String selfieBase64;
         String liveness1Base64;
         String liveness2Base64;
